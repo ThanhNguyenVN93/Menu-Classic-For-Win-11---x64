@@ -34,6 +34,7 @@
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.txtLog = new System.Windows.Forms.TextBox();
             this.btnRestoreDefault = new System.Windows.Forms.Button();
+            this.btnCheckUpdate = new System.Windows.Forms.Button();
             this.btnEnableClassic = new System.Windows.Forms.Button();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.lblos = new System.Windows.Forms.Label();
@@ -69,6 +70,7 @@
             // 
             this.groupBox2.Controls.Add(this.txtLog);
             this.groupBox2.Controls.Add(this.btnRestoreDefault);
+            this.groupBox2.Controls.Add(this.btnCheckUpdate);
             this.groupBox2.Controls.Add(this.btnEnableClassic);
             this.groupBox2.Location = new System.Drawing.Point(1, 79);
             this.groupBox2.Name = "groupBox2";
@@ -84,9 +86,20 @@
             this.txtLog.Name = "txtLog";
             this.txtLog.Size = new System.Drawing.Size(427, 147);
             this.txtLog.TabIndex = 2;
-            // 
+            //
+            // btnCheckUpdate
+            //
+            this.btnCheckUpdate.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Bold);
+            this.btnCheckUpdate.Location = new System.Drawing.Point(165, 19);
+            this.btnCheckUpdate.Name = "btnCheckUpdate";
+            this.btnCheckUpdate.Size = new System.Drawing.Size(141, 56);
+            this.btnCheckUpdate.TabIndex = 3;
+            this.btnCheckUpdate.Text = "CHECK UPDATE";
+            this.btnCheckUpdate.UseVisualStyleBackColor = true;
+            this.btnCheckUpdate.Click += new System.EventHandler(this.btnCheckUpdate_Click);
+            //
             // btnRestoreDefault
-            // 
+            //
             this.btnRestoreDefault.Enabled = false;
             this.btnRestoreDefault.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Bold);
             this.btnRestoreDefault.Location = new System.Drawing.Point(312, 19);
@@ -144,6 +157,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Menu Classic For Win 11 - x64";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.Shown += new System.EventHandler(this.Form1_Shown);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
@@ -162,6 +176,7 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label lblos;
         private System.Windows.Forms.Button btnRestoreDefault;
+        private System.Windows.Forms.Button btnCheckUpdate;
         private System.Windows.Forms.Button btnEnableClassic;
         private System.Windows.Forms.TextBox txtLog;
     }

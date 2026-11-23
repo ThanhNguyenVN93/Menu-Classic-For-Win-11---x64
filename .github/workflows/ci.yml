@@ -64,24 +64,39 @@ jobs:
               [System.IO.File]::WriteAllBytes($p, $placeholder)
             }
           }
-      - name: Restore and build
+      - name: Restore, build x64 & x86, and run SelfTest
         shell: pwsh
         env:
           FX_REF: C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8
         run: |
-          $slnRoot = Get-ChildItem -Filter *.sln
-          $csprojRoot = Get-ChildItem -Filter *.csproj
-          if ($slnRoot) {
-            $targets = $slnRoot
-          } elseif ($csprojRoot) {
-            $targets = $csprojRoot
-          } else {
-            $targets = Get-ChildItem -Filter *.csproj -Recurse | Where-Object { $_.FullName -notmatch '\\(bin|obj|\.claude|\.vs)\\' }
+          nuget restore frmmenuclassic.sln -PackagesDirectory packages
+          msbuild frmmenuclassic.csproj /p:Configuration=Release /p:Platform="AnyCPU" /p:FrameworkPathOverride="$env:FX_REF"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild frmmenuclassic.csproj /p:Configuration=Release /p:Platform="x86" /p:FrameworkPathOverride="$env:FX_REF"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild SelfTest\SelfTest.csproj /p:Configuration=Release /p:FrameworkPathOverride="$env:FX_REF"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\SelfTest\bin\Release\SelfTest.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package and publish Release on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          New-Item -ItemType Directory -Path release_dist -Force | Out-Null
+          $zipX64 = "release_dist/MenuClassicForWin11-$tag-win-x64.zip"
+          $zipX86 = "release_dist/MenuClassicForWin11-$tag-win-x86.zip"
+          Compress-Archive -Path "bin/Release/Menu Classic For Win 11 - x64.exe" -DestinationPath $zipX64 -Force
+          Compress-Archive -Path "bin/x86/Release/Menu Classic For Win 11 - x86.exe" -DestinationPath $zipX86 -Force
+          $sums = @()
+          foreach ($f in @($zipX64, $zipX86)) {
+            $hash = (Get-FileHash $f -Algorithm SHA256).Hash.ToLowerInvariant()
+            $name = Split-Path $f -Leaf
+            $sums += "$hash  $name"
           }
-          foreach ($t in $targets) {
-            Write-Host "=== Building $($t.FullName) ==="
-            nuget restore $t.FullName -PackagesDirectory (Join-Path $t.DirectoryName "packages")
-            msbuild $t.FullName /t:Restore /p:Configuration=Release
-            msbuild $t.FullName /p:Configuration=Release /p:FrameworkPathOverride="$env:FX_REF"
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
+          $sumsPath = "release_dist/SHA256SUMS.txt"
+          Set-Content -Path $sumsPath -Value $sums -Encoding Ascii
+          gh release create $tag $zipX64 $zipX86 $sumsPath --title "Release $tag" --generate-notes

@@ -45,6 +45,9 @@
     <Compile Include="..\Services\UpdateService.cs">
       <Link>Services\UpdateService.cs</Link>
     </Compile>
+    <Compile Include="..\Services\Localization.cs">
+      <Link>Services\Localization.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -22,6 +22,7 @@ namespace SelfTest
             Test_ExtractExe_Normal();
             Test_ExtractExe_ZipSlip();
             Test_ExtractExe_SizeLimit();
+            Test_Localization();
 
             Console.WriteLine();
             Console.WriteLine(string.Format("Results: {0} passed, {1} failed.", _pass, _fail));
@@ -63,6 +64,22 @@ namespace SelfTest
             {
                 Fail(testName, "expected " + typeof(T).Name + " but got " + ex.GetType().Name + ": " + ex.Message);
             }
+        }
+
+        // --- Localization ---
+
+        private static void Test_Localization()
+        {
+            var missing = Localization.ValidateKeyParity();
+            Assert(missing.Count == 0, "Localization_key_parity",
+                "missing: " + string.Join(", ", missing.ToArray()));
+            Assert(Localization.Get(AppLang.En, "UpToDate", "1.2.3") == "You are up to date (v1.2.3).",
+                "Localization_format_en");
+            Assert(Localization.Get(AppLang.Vi, "NewVersionFound", "2.0").Contains("2.0"),
+                "Localization_format_vi");
+            Assert(Localization.Get(AppLang.En, "BtnLang") == "[ENG] / VI" &&
+                   Localization.Get(AppLang.Vi, "BtnLang") == "ENG / [VI]", "Localization_btnLang");
+            Assert(Localization.Get(AppLang.En, "NoSuchKey") == "NoSuchKey", "Localization_unknown_key");
         }
 
         // --- ParseVersion ---

@@ -23,9 +23,49 @@ namespace frmmenuclassic
         private const string ReleasesApiUrl =
             "https://api.github.com/repos/ThanhNguyenVN93/Menu-Classic-For-Win-11---x64/releases/latest";
 
+        private AppLang _currentLang = Localization.LoadLanguage();
+        private readonly List<KeyValuePair<string, object[]>> _logEntries = new List<KeyValuePair<string, object[]>>();
+
         public Form1()
         {
             InitializeComponent();
+            ApplyLanguage();
+        }
+
+        private string T(string key, params object[] args)
+        {
+            return Localization.Get(_currentLang, key, args);
+        }
+
+        private void ApplyLanguage()
+        {
+            this.SuspendLayout();
+            try
+            {
+                label1.Text = T("TitleHeader");
+                btnEnableClassic.Text = T("BtnClassic");
+                btnRestoreDefault.Text = T("BtnModern");
+                btnCheckUpdate.Text = T("BtnUpdate");
+                btnLangToggle.Text = T("BtnLang");
+
+                var sb = new StringBuilder();
+                foreach (var entry in _logEntries)
+                    sb.Append(Localization.Get(_currentLang, entry.Key, entry.Value)).Append(Environment.NewLine);
+                txtLog.Text = sb.ToString();
+                txtLog.SelectionStart = txtLog.TextLength;
+                txtLog.ScrollToCaret();
+            }
+            finally
+            {
+                this.ResumeLayout(true);
+            }
+        }
+
+        private void btnLangToggle_Click(object sender, EventArgs e)
+        {
+            _currentLang = _currentLang == AppLang.En ? AppLang.Vi : AppLang.En;
+            Localization.SaveLanguage(_currentLang);
+            ApplyLanguage();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -51,7 +91,7 @@ namespace frmmenuclassic
                     {
                         osCaption = obj["Caption"]?.ToString() ?? "";
                         string osArchitecture = obj["OSArchitecture"]?.ToString() ?? "Unknown Architecture";
-                        lblos.Text = osCaption + " - " + osArchitecture;
+                        lblos.Text = FormatShortOsLabel(osCaption, osArchitecture);
                     }
                 }
             }
@@ -74,8 +114,8 @@ namespace frmmenuclassic
             if (!isWin11)
             {
                 MessageBox.Show(
-                    $"Current Operating System ({osCaption}) is not Windows 11. Application will close!",
-                    "System Error!!",
+                    T("NotWin11Body", osCaption),
+                    T("NotWin11Title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
@@ -89,14 +129,28 @@ namespace frmmenuclassic
                 if (classicEnabled)
                 {
                     btnRestoreDefault.Enabled = true;
-                    Log("Classic menu is currently ENABLED.");
+                    Log("StatusEnabled");
                 }
                 else
                 {
                     btnEnableClassic.Enabled = true;
-                    Log("Classic menu is currently DISABLED.");
+                    Log("StatusDisabled");
                 }
             }
+        }
+
+        private static string FormatShortOsLabel(string osCaption, string osArchitecture)
+        {
+            string shortOs = osCaption ?? "";
+            string lower = shortOs.ToLowerInvariant();
+            if (lower.Contains("windows 11")) shortOs = "MS Windows 11";
+            else if (lower.Contains("windows 10")) shortOs = "MS Windows 10";
+            else if (lower.Contains("windows 8.1")) shortOs = "MS Windows 8.1";
+            else if (lower.Contains("windows 8")) shortOs = "MS Windows 8";
+            else if (lower.Contains("windows 7")) shortOs = "MS Windows 7";
+            else if (lower.Contains("microsoft windows")) shortOs = shortOs.Replace("Microsoft Windows", "MS Windows");
+
+            return string.IsNullOrWhiteSpace(osArchitecture) ? shortOs : (shortOs + " - " + osArchitecture);
         }
 
         private const string PrimaryClsid = @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
@@ -139,42 +193,43 @@ namespace frmmenuclassic
             await RunUpdateCheckAsync(silent: true);
         }
 
-        private void Log(string message)
+        private void Log(string key, params object[] args)
         {
             if (txtLog.InvokeRequired)
             {
-                txtLog.Invoke(new Action(() => Log(message)));
+                txtLog.Invoke(new Action(() => Log(key, args)));
                 return;
             }
-            txtLog.AppendText(message + Environment.NewLine);
+            _logEntries.Add(new KeyValuePair<string, object[]>(key, args));
+            txtLog.AppendText(T(key, args) + Environment.NewLine);
         }
 
         private async Task RunUpdateCheckAsync(bool silent)
         {
             try
             {
-                Log("Checking for updates...");
+                Log("CheckingUpdates");
                 string json = await Task.Run(() => DownloadString(ReleasesApiUrl));
                 var info = UpdateService.ParseRelease(json, UpdateService.Arch);
                 if (info == null)
                 {
-                    if (!silent) Log("No applicable release found.");
-                    else Log("No update available.");
+                    if (!silent) Log("NoApplicableRelease");
+                    else Log("NoUpdateAvailable");
                     return;
                 }
 
                 var currentVer = Assembly.GetExecutingAssembly().GetName().Version;
                 if (!UpdateService.IsNewer(currentVer, info.Version))
                 {
-                    Log(string.Format("You are up to date (v{0}).", currentVer));
+                    Log("UpToDate", currentVer);
                     return;
                 }
 
-                Log(string.Format("New version available: v{0}", info.Version));
+                Log("NewVersionFound", info.Version);
 
                 var answer = MessageBox.Show(
-                    string.Format("Version {0} is available. Download and install now?", info.Version),
-                    "Update Available",
+                    T("UpdatePromptBody", info.Version),
+                    T("UpdatePromptTitle"),
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Information);
 
@@ -185,10 +240,10 @@ namespace frmmenuclassic
             catch (Exception ex)
             {
                 if (!silent)
-                    MessageBox.Show("Update check failed: " + ex.Message, "Update Error",
+                    MessageBox.Show(T("UpdateFailed", ex.Message), T("UpdateErrorTitle"),
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 else
-                    Log("Update check failed: " + ex.Message);
+                    Log("UpdateFailed", ex.Message);
             }
         }
 
@@ -201,30 +256,30 @@ namespace frmmenuclassic
                 string zipPath = Path.Combine(tmpDir, info.ZipFileName);
                 string sha256Path = Path.Combine(tmpDir, "SHA256SUMS.txt");
 
-                Log("Downloading " + info.ZipFileName + "...");
+                Log("Downloading", info.ZipFileName);
                 await Task.Run(() => DownloadFile(info.ZipUrl, zipPath));
 
-                Log("Downloading SHA256SUMS.txt...");
+                Log("Downloading", "SHA256SUMS.txt");
                 await Task.Run(() => DownloadFile(info.Sha256Url, sha256Path));
 
                 string sha256Content = File.ReadAllText(sha256Path);
                 string expected = UpdateService.ParseSha256(sha256Content, info.ZipFileName);
                 if (expected == null)
-                    throw new InvalidOperationException("Could not find SHA-256 entry for " + info.ZipFileName);
+                    throw new InvalidOperationException(T("MissingShaEntry", info.ZipFileName));
 
-                Log("Verifying SHA-256...");
+                Log("VerifyingSha256");
                 bool ok = await Task.Run(() => UpdateService.VerifySha256(zipPath, expected));
                 if (!ok)
-                    throw new InvalidOperationException("SHA-256 verification failed.");
+                    throw new InvalidOperationException(T("ShaFailed"));
 
-                Log("Extracting...");
+                Log("Extracting");
                 string extractDir = Path.Combine(tmpDir, "extracted");
                 Directory.CreateDirectory(extractDir);
                 string newExe = await Task.Run(() => UpdateService.ExtractExe(zipPath, extractDir));
                 if (newExe == null)
-                    throw new InvalidOperationException("No .exe found in archive.");
+                    throw new InvalidOperationException(T("MissingExeInZip"));
 
-                Log("Applying update...");
+                Log("ApplyingUpdate");
                 UpdateService.ApplyStagedUpdate(Application.ExecutablePath, newExe);
             }
             catch
@@ -282,7 +337,7 @@ namespace frmmenuclassic
             {
                 if (IsClassicMenuEnabled(hkcu))
                 {
-                    MessageBox.Show("Registry existed!", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(T("RegExisted"), T("InfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     Application.Exit();
                     return;
                 }
@@ -300,7 +355,7 @@ namespace frmmenuclassic
                     }
                 }
 
-                MessageBox.Show("Registry Key have been created.", "Infomation", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(T("RegCreated"), T("InfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 RestartExplorer();
                 btnEnableClassic.Enabled = false;
                 Application.Exit();
@@ -326,14 +381,14 @@ namespace frmmenuclassic
 
                 if (deletedAny)
                 {
-                    MessageBox.Show("Registry key successfully deleted!", "Infomation!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(T("RegDeleted"), T("InfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     RestartExplorer();
                     btnRestoreDefault.Enabled = false;
                     Application.Exit();
                 }
                 else
                 {
-                    MessageBox.Show("Registry does not exist!", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(T("RegNotExist"), T("InfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     Application.Exit();
                 }
             }

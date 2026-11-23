@@ -38,6 +38,7 @@
             this.btnEnableClassic = new System.Windows.Forms.Button();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.lblos = new System.Windows.Forms.Label();
+            this.btnLangToggle = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -124,6 +125,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.btnLangToggle);
             this.groupBox3.Controls.Add(this.lblos);
             this.groupBox3.Location = new System.Drawing.Point(1, 319);
             this.groupBox3.Name = "groupBox3";
@@ -133,12 +135,26 @@
             // 
             // lblos
             // 
-            this.lblos.AutoSize = true;
-            this.lblos.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.75F, System.Drawing.FontStyle.Bold);
-            this.lblos.Location = new System.Drawing.Point(27, 39);
+            this.lblos.AutoEllipsis = true;
+            this.lblos.AutoSize = false;
+            this.lblos.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.5F, System.Drawing.FontStyle.Bold);
+            this.lblos.Location = new System.Drawing.Point(14, 25);
             this.lblos.Name = "lblos";
-            this.lblos.Size = new System.Drawing.Size(0, 20);
+            this.lblos.Size = new System.Drawing.Size(348, 28);
             this.lblos.TabIndex = 0;
+            this.lblos.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // btnLangToggle
+            //
+            this.btnLangToggle.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnLangToggle.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.75F, System.Drawing.FontStyle.Bold);
+            this.btnLangToggle.Location = new System.Drawing.Point(368, 22);
+            this.btnLangToggle.Name = "btnLangToggle";
+            this.btnLangToggle.Size = new System.Drawing.Size(92, 32);
+            this.btnLangToggle.TabIndex = 1;
+            this.btnLangToggle.Text = "[ENG] / VI";
+            this.btnLangToggle.UseVisualStyleBackColor = true;
+            this.btnLangToggle.Click += new System.EventHandler(this.btnLangToggle_Click);
             // 
             // Form1
             // 
@@ -175,6 +191,7 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label lblos;
+        private System.Windows.Forms.Button btnLangToggle;
         private System.Windows.Forms.Button btnRestoreDefault;
         private System.Windows.Forms.Button btnCheckUpdate;
         private System.Windows.Forms.Button btnEnableClassic;
